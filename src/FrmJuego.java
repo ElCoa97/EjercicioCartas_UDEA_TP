@@ -133,12 +133,12 @@ public class FrmJuego extends JFrame {
     private void btnAnalizarClick(ActionEvent evt) {
         switch (tpJugadores.getSelectedIndex()) {
             case 0:
-                JOptionPane.showMessageDialog(null, jugador1.getEscaleras());
-                lblPuntosJ1.setText("Puntos al final J1: " + jugador1.getPuntosFinal());
+                JOptionPane.showMessageDialog(null, jugador1.getEscalerasYGrupos());
+                lblPuntosJ1.setText("Puntos al final J1: " + jugador1.getPuntaje());
                 break;
             case 1:
-                JOptionPane.showMessageDialog(null, jugador2.getEscaleras());
-                lblPuntosJ2.setText("Puntos al final J2: " + jugador2.getPuntosFinal());
+                JOptionPane.showMessageDialog(null, jugador2.getEscalerasYGrupos());
+                lblPuntosJ2.setText("Puntos al final J2: " + jugador2.getPuntaje());
                 break;
         }
         habilitarbtnGanador();
@@ -146,8 +146,8 @@ public class FrmJuego extends JFrame {
     }
  
     private void btnGanadorClick(ActionEvent evt) {
-        int puntosJ1 = jugador1.getPuntosFinal();
-        int puntosJ2 = jugador2.getPuntosFinal();
+        int puntosJ1 = jugador1.getPuntaje();
+        int puntosJ2 = jugador2.getPuntaje();
 
         String mensaje = "COMPARACION DE PUNTAJES:\n";
         mensaje += "\nJugador 1: " + puntosJ1 + " puntos\n";

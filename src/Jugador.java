@@ -1,5 +1,4 @@
 import java.util.Random;
-
 import javax.swing.JPanel;
 
 public class Jugador {
@@ -7,11 +6,11 @@ public class Jugador {
     private int TOTAL_CARTAS = 10;
     private int MARGEN = 10;
     private int DISTANCIA = 40;
-    private int puntosFinal = 0;
-    private int sumaEscaleras = 0;
-
     private Carta[] cartas = new Carta[TOTAL_CARTAS];
-
+    private Carta[] cartasEnEscalera = new Carta[TOTAL_CARTAS];
+    private Carta[] cartasRestantes = new Carta[0];
+    private Carta[] cartasEnGrupo = new Carta[TOTAL_CARTAS];
+    private Carta[] cartasSinNada = new Carta[0];
     private Random r = new Random(); // la suerte del jugador
 
     public void repartir() {
@@ -55,101 +54,165 @@ public class Jugador {
                 fila++;
             }
         }
-
         return mensaje;
     }
 
-    public int getPuntos() {
-        int total = 0;
-        for (Carta c : cartas) {
-            total += c.valorCarta();
-        }
-        return total;
-    }
+    public String getEscalerasYGrupos() {
+        int totalEscaleras = 0;
+        boolean[] usadaEnEscalera = new boolean[TOTAL_CARTAS];
+        boolean[] usadaEnGrupo = new boolean[TOTAL_CARTAS];
 
-    public String getEscaleras() {
-        Carta[] treboles = new Carta[10];
-        Carta[] picas = new Carta[10];
-        Carta[] corazones = new Carta[10];
-        Carta[] diamante = new Carta[10];
+        // Para cada pinta
+        for (Pinta pinta : Pinta.values()) {
+            // Extraer las cartas de esa pinta
+            Carta[] porPinta = new Carta[TOTAL_CARTAS];
+            int count = 0;
 
-        int tre = 0, pic = 0, cor = 0, dia = 0;
-        sumaEscaleras = 0;
-
-        for (Carta carta : cartas) {
-            switch (carta.getPinta()) {
-                case TREBOL:
-                    treboles[tre++] = carta;
-                    break;
-                case PICA:
-                    picas[pic++] = carta;
-                    break;
-                case CORAZON:
-                    corazones[cor++] = carta;
-                    break;
-                case DIAMANTE:
-                    diamante[dia++] = carta;
-                    break;
-            }
-        }
-
-        String resultado = "";
-        
-        resultado += revisarEscaleras(treboles, tre, "TREBOL");
-        resultado += revisarEscaleras(picas, pic, "PICA");
-        resultado += revisarEscaleras(corazones, cor, "CORAZON");
-        resultado += revisarEscaleras(diamante, dia, "DIAMANTE");
-
-        puntosFinal = getPuntos() - sumaEscaleras;
-        
-        if (resultado.isEmpty()) {
-            return "NO HAY ESCALERAS\nPUNTAJE AL FINALIZAR: "+ puntosFinal;
-        }else{
-            return resultado + "\n\nPUNTOS AL FINALIZAR: " + puntosFinal;
-        }
-    }
-
-    public String revisarEscaleras(Carta[] arreglo, int cantidad, String nombrePinta){
-        Carta[] cartasValidas = new Carta[cantidad];
-        for (int i = 0; i< cantidad; i++){
-            cartasValidas[i] = arreglo[i];
-        }
-
-        java.util.Arrays.sort(cartasValidas, (a,b) -> a.getNombre().ordinal() - b.getNombre().ordinal());
-
-        String mensaje = "";
-        int i = 0;
-
-        while (i< cantidad -1){
-            int inicio = i;
-
-            while (i<cantidad-1 && cartasValidas[i+1].getNombre().ordinal() == cartasValidas[i].getNombre().ordinal()+1) {
-                i++;                
-            }
-
-            int longitud = i - inicio +1;
-
-            if(longitud >= 2){
-                int puntosEscalera = 0;
-                mensaje += "ESCALERAS:\n"+ longitud + " CARTAS DE "+ nombrePinta + ": ";
-                for (int j = inicio; j<= i; j++){
-                    mensaje += cartasValidas[j].getNombre()+", ";
-                    puntosEscalera += cartasValidas[j].valorCarta();
+            for (int i = 0; i < TOTAL_CARTAS; i++) {
+                if (cartas[i].getPinta() == pinta) {
+                    porPinta[count++] = cartas[i];
                 }
-                sumaEscaleras = sumaEscaleras + puntosEscalera;;
             }
 
-            i++;
+            // Ordenar por valor
+            for (int i = 0; i < count - 1; i++) {
+                for (int j = 0; j < count - i - 1; j++) {
+                    if (porPinta[j].getNombre().ordinal() > porPinta[j + 1].getNombre().ordinal()) {
+                        Carta temp = porPinta[j];
+                        porPinta[j] = porPinta[j + 1];
+                        porPinta[j + 1] = temp;
+                    }
+                }
+            }
+
+            // Buscar escaleras consecutivas
+            int i = 0;
+            while (i < count - 1) {
+                int inicio = i;
+                while (i < count - 1
+                        && porPinta[i + 1].getNombre().ordinal() == porPinta[i].getNombre().ordinal() + 1) {
+                    i++;
+                }
+
+                int longitud = i - inicio + 1;
+
+                if (longitud >= 2) {
+                    // Guardar las cartas de la escalera
+                    for (int j = inicio; j <= i; j++) {
+                        for (int k = 0; k < TOTAL_CARTAS; k++) {
+                            if (cartas[k] == porPinta[j]) {
+                                usadaEnEscalera[k] = true;
+                                cartasEnEscalera[totalEscaleras++] = cartas[k];
+                                break;
+                            }
+                        }
+                    }
+                }
+                i++;
+            }
         }
 
+        // Crear cartasRestantes
+        cartasRestantes = new Carta[TOTAL_CARTAS - totalEscaleras];
+        int idx = 0;
+        for (int i = 0; i < TOTAL_CARTAS; i++) {
+            if (!usadaEnEscalera[i]) {
+                cartasRestantes[idx++] = cartas[i];
+            }
+        }
+
+        // Contar grupos
+        int[] contadores = new int[NombreCarta.values().length];
+        for (int i = 0; i < TOTAL_CARTAS; i++) {
+            if (!usadaEnEscalera[i]) {
+                contadores[cartas[i].getNombre().ordinal()]++;
+            }
+        }
+
+        // Marcar cartas que pertenecen a grupos
+        int totalGrupos = 0;
+        for (int i = 0; i < contadores.length; i++) {
+            if (contadores[i] > 1) {
+                for (int j = 0; j < TOTAL_CARTAS; j++) {
+                    if (!usadaEnEscalera[j] && cartas[j].getNombre().ordinal() == i) {
+                        cartasEnGrupo[totalGrupos++] = cartas[j];
+                        usadaEnGrupo[j] = true;
+                    }
+                }
+            }
+        }
+
+        // Cartas que no estan en nada
+        int totalSinNada = 0;
+        for (int i = 0; i < TOTAL_CARTAS; i++) {
+            if (!usadaEnEscalera[i] && !usadaEnGrupo[i]) {
+                totalSinNada++;
+            }
+        }
+        cartasSinNada = new Carta[totalSinNada];
+        int contador = 0;
+        for (int i = 0; i < TOTAL_CARTAS; i++) {
+            if (!usadaEnEscalera[i] && !usadaEnGrupo[i]) {
+                cartasSinNada[contador++] = cartas[i];
+            }
+        }
+        String mensaje = "";
+
+        // Mostrar escaleras
+        if (totalEscaleras > 0) {
+            mensaje += "SE ENCONTRARON LAS SIGUIENTES ESCALERAS:\n";
+
+            for (Pinta pinta : Pinta.values()) {
+                String nPinta = pinta + ": ";
+                boolean hayCartas = false;
+
+                for (int i = 0; i < totalEscaleras; i++) {
+                    if (cartasEnEscalera[i].getPinta() == pinta) {
+                        if (hayCartas)
+                            nPinta += ", ";
+                        nPinta += cartasEnEscalera[i].getNombre();
+                        hayCartas = true;
+                    }
+                }
+
+                if (hayCartas) {
+                    mensaje += "*" + nPinta + "\n";
+                }
+            }
+        } else {
+            mensaje += "NO SE ENCONTRARON ESCALERAS.\n";
+        }
+
+        // Mostrar grupos
+        boolean hayGrupos = false;
+        for (int c : contadores) {
+            if (c > 1) {
+                hayGrupos = true;
+                break;
+            }
+        }
+
+        if (hayGrupos) {
+            mensaje += "\nSE ENCONTRARON LOS SIGUIENTES GRUPOS:\n";
+            for (int i = 0; i < contadores.length; i++) {
+                int cantidad = contadores[i];
+                if (cantidad > 1) {
+                    mensaje += "*" + Grupo.values()[cantidad] + " de " + NombreCarta.values()[i] + "\n";
+                }
+            }
+        } else {
+            mensaje += "\nNO SE ENCONTRARON GRUPOS RESTANTES.";
+        }
         return mensaje;
-        
     }
 
-    public int getPuntosFinal(){
-        return puntosFinal;
+    public int getPuntaje() {
+        int suma = 0;
+        for (Carta c : cartasSinNada) {
+            if (c != null) {
+                suma += c.valorCarta();
+            }
+        }
+        return suma;
     }
-
-    
-
 }
